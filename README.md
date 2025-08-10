@@ -28,5 +28,9 @@ user-management-system/
 # how to add ssl certificate in this
 # How can i scale it to handle 50k request per minute
 # support authentication and authorizations
-# support authentication and authorizations
+# add login via google
+# add another microservices in spring and connect that with this user management service
+# experiment about cdn
+# check how can we deploy it on aws farget
+# use chatgpt5 to create a beautiful fe screens
 
