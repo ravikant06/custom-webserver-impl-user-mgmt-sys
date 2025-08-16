@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Management UI</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <div class="brand">User Management</div>
+      <nav class="nav">
+        <button class="nav-btn" data-view="login">Login</button>
+        <button class="nav-btn" data-view="users" disabled>Users</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Login View -->
+      <section id="view-login" class="view active">
+        <div class="card">
+          <h2>Login</h2>
+          <p class="muted">Demo login (no backend auth yet). This stores a fake token to enable the UI.</p>
+          <div class="grid two">
+            <label>
+              <span>Email</span>
+              <input id="login_email" placeholder="admin@example.com" />
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="login_password" type="password" placeholder="password123" />
+            </label>
+          </div>
+          <div class="row">
+            <button id="btnLogin" class="btn">Login</button>
+          </div>
+          <div id="loginMsg" class="muted"></div>
+        </div>
+      </section>
+
+      <!-- Users List View -->
+      <section id="view-users" class="view">
+        <div class="toolbar">
+          <div class="title">Users</div>
+          <div class="actions">
+            <button id="btnRefresh" class="btn secondary">Refresh</button>
+            <button id="btnLogout" class="btn danger">Logout</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="grid two">
+            <label>
+              <span>Search</span>
+              <input id="search_input" placeholder="name or email" />
+            </label>
+            <label>
+              <span>Status</span>
+              <select id="status_filter">
+                <option value="">All</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
+                <option value="SUSPENDED">SUSPENDED</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <button id="btnSearch" class="btn">Search</button>
+            <button id="btnTestAPI" class="btn secondary">Test API</button>
+          </div>
+        </div>
+
+        <div class="card" style="overflow:auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="users_table"></tbody>
+          </table>
+        </div>
+
+        <div id="user_details" class="card hidden"></div>
+      </section>
+    </main>
+
+    <footer class="footer">User Management • Responsive UI • Frontend</footer>
+  </div>
+
+  <script src="./js/app.js" defer></script>
+</body>
+</html> 

@@ -33,4 +33,5 @@ user-management-system/
 # experiment about cdn
 # check how can we deploy it on aws farget
 # use chatgpt5 to create a beautiful fe screens
+# role based auth
 
