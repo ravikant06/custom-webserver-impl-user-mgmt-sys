@@ -201,6 +201,22 @@ public class HttpRequest {
         return formData;
     }
 
+    /**
+     * Parse request body as JSON into the specified class
+     */
+    public <T> T bodyAs(Class<T> clazz) {
+        if (body == null || body.trim().isEmpty()) {
+            throw new IllegalArgumentException("Request body is empty");
+        }
+        
+        try {
+            // Use the same ObjectMapper from HttpResponse for consistency
+            return com.ravi.usermgmt.http.HttpResponse.getObjectMapper().readValue(body, clazz);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to parse request body as " + clazz.getSimpleName() + ": " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public String toString() {
         return String.format("%s %s %s", method, path, httpVersion);

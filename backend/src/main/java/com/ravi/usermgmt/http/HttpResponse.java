@@ -214,6 +214,11 @@ public class HttpResponse {
     public String getStatusMessage() { return statusMessage; }
     public Map<String, String> getHeaders() { return new HashMap<>(headers); }
     public String getBody() { return body; }
+    
+    /**
+     * Get the ObjectMapper instance for JSON processing
+     */
+    public static ObjectMapper getObjectMapper() { return objectMapper; }
 
     @Override
     public String toString() {

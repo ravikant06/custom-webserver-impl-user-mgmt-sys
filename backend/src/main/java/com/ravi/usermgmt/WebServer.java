@@ -48,6 +48,7 @@ public class WebServer {
     
     // Controllers
     private UserController userController;
+    private com.ravi.usermgmt.controllers.AuthController authController;
 
     public WebServer() {
         this(8080, "localhost", 50, 30000);
@@ -87,6 +88,7 @@ public class WebServer {
         
         // Initialize controllers
         this.userController = new UserController();
+        this.authController = new com.ravi.usermgmt.controllers.AuthController();
         
         // Initialize router and routes
         setupRoutes();
@@ -116,6 +118,19 @@ public class WebServer {
         // Server metrics
         router.get("/metrics", HttpRouter.withMiddleware(corsMiddleware,
             HttpRouter.withMiddleware(loggingMiddleware, this::serverMetrics)));
+        
+        // Authentication endpoints
+        router.post("/api/auth/login", HttpRouter.withMiddleware(corsMiddleware,
+            HttpRouter.withMiddleware(loggingMiddleware, authController::login)));
+        
+        router.post("/api/auth/logout", HttpRouter.withMiddleware(corsMiddleware,
+            HttpRouter.withMiddleware(loggingMiddleware, authController::logout)));
+        
+        router.get("/api/auth/validate", HttpRouter.withMiddleware(corsMiddleware,
+            HttpRouter.withMiddleware(loggingMiddleware, authController::validateToken)));
+        
+        router.post("/api/auth/refresh", HttpRouter.withMiddleware(corsMiddleware,
+            HttpRouter.withMiddleware(loggingMiddleware, authController::refreshToken)));
         
         // User management endpoints
         router.get("/api/users", HttpRouter.withMiddleware(corsMiddleware,

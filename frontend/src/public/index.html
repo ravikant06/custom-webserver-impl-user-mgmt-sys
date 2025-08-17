@@ -20,29 +20,42 @@
       <!-- Login View -->
       <section id="view-login" class="view active">
         <div class="card">
-          <h2>Login</h2>
-          <p class="muted">Demo login (no backend auth yet). This stores a fake token to enable the UI.</p>
+          <h2>Login to User Management System</h2>
+          <p class="muted">Enter your credentials to access the system.</p>
           <div class="grid two">
             <label>
               <span>Email</span>
-              <input id="login_email" placeholder="admin@example.com" />
+              <input id="login_email" type="email" placeholder="admin@example.com" required />
             </label>
             <label>
               <span>Password</span>
-              <input id="login_password" type="password" placeholder="password123" />
+              <input id="login_password" type="password" placeholder="password123" required />
             </label>
           </div>
           <div class="row">
             <button id="btnLogin" class="btn">Login</button>
           </div>
           <div id="loginMsg" class="muted"></div>
+          
+          <div class="demo-accounts" style="margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--muted);">Demo Accounts:</h4>
+            <p style="margin: 4px 0; font-size: 12px; color: var(--muted);">
+              <strong>Admin:</strong> admin@example.com / password123<br/>
+              <strong>User:</strong> john@example.com / password123
+            </p>
+          </div>
         </div>
       </section>
 
       <!-- Users List View -->
       <section id="view-users" class="view">
         <div class="toolbar">
-          <div class="title">Users</div>
+          <div class="title">
+            Users
+            <div class="user-info" style="font-size: 12px; color: var(--muted); font-weight: normal;">
+              Logged in as: <span class="user-display">Loading...</span>
+            </div>
+          </div>
           <div class="actions">
             <button id="btnRefresh" class="btn secondary">Refresh</button>
             <button id="btnLogout" class="btn danger">Logout</button>

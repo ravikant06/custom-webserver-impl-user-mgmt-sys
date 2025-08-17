@@ -2,18 +2,71 @@
   // Backend API base URL - this is where your Java server is running
   const API_BASE = 'http://localhost:8080';
   
-  const state = { token: null, page: 0, pageSize: 10 };
+  const state = { 
+    token: localStorage.getItem('auth_token'), 
+    user: JSON.parse(localStorage.getItem('user_info') || 'null'),
+    page: 0, 
+    pageSize: 10 
+  };
+  
   const $ = (s) => document.querySelector(s);
+  
   const api = async (path, opts={}) => {
     const headers = { 'Content-Type': 'application/json' };
+    
+    // Add authorization header if token exists
+    if (state.token && !opts.skipAuth) {
+      headers['Authorization'] = `Bearer ${state.token}`;
+    }
+    
     const options = { method: opts.method || 'GET', headers };
     if (opts.body) options.body = JSON.stringify(opts.body);
+    
     // Add the API_BASE to the path to point to your backend
     const fullUrl = path.startsWith('http') ? path : `${API_BASE}${path}`;
-    const res = await fetch(fullUrl, options);
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    
+    try {
+      const res = await fetch(fullUrl, options);
+      
+      // Handle 401 Unauthorized - token expired or invalid
+      if (res.status === 401) {
+        console.warn('Authentication failed, clearing token');
+        clearAuthState();
+        setView('login');
+        enableApp(false);
+        throw new Error('Authentication required');
+      }
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `HTTP ${res.status}`);
+      }
+      
+      return res.json();
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   };
+  
+  // Authentication helper functions
+  function saveAuthState(token, userInfo) {
+    state.token = token;
+    state.user = userInfo;
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user_info', JSON.stringify(userInfo));
+  }
+  
+  function clearAuthState() {
+    state.token = null;
+    state.user = null;
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+  }
+  
+  function isAuthenticated() {
+    return state.token && state.user;
+  }
 
   // Views handling
   function setView(name){
@@ -29,24 +82,92 @@
 
   // Login
   async function doLogin(){
-    console.log('doLogin() called'); // Debug: function entry
-    // Demo only: no backend auth. Store a fake token and enable app.
+    console.log('doLogin() called');
     const email = $('#login_email').value.trim();
     const pwd = $('#login_password').value.trim();
-    if (!email || !pwd){ $('#loginMsg').textContent = 'Please enter email and password'; return; }
-    state.token = 'demo-token';
-    $('#loginMsg').textContent = 'Logged in!';
-    enableApp(true);
-    setView('users');
-    console.log('About to call refreshUsers()'); // Debug: before API call
-    await refreshUsers();
-    console.log('refreshUsers() completed'); // Debug: after API call
+    const msgEl = $('#loginMsg');
+    
+    if (!email || !pwd) { 
+      msgEl.textContent = 'Please enter email and password'; 
+      msgEl.style.color = 'var(--danger)';
+      return; 
+    }
+    
+    try {
+      msgEl.textContent = 'Logging in...';
+      msgEl.style.color = 'var(--muted)';
+      
+      // Call the real authentication API
+      const response = await api('/api/auth/login', {
+        method: 'POST',
+        body: { email, password: pwd },
+        skipAuth: true // Don't send auth header for login
+      });
+      
+      if (response.success && response.data) {
+        const loginData = response.data;
+        
+        // Save authentication state
+        saveAuthState(loginData.token, {
+          userId: loginData.userId,
+          username: loginData.username,
+          email: loginData.email,
+          firstName: loginData.firstName,
+          lastName: loginData.lastName,
+          role: loginData.role,
+          status: loginData.status
+        });
+        
+        msgEl.textContent = 'Login successful!';
+        msgEl.style.color = 'var(--ok)';
+        
+        // Update UI
+        updateUserDisplay();
+        enableApp(true);
+        setView('users');
+        
+        // Load users
+        await refreshUsers();
+        
+        console.log('Login successful for user:', loginData.email);
+      } else {
+        msgEl.textContent = 'Login failed: Invalid response format';
+        msgEl.style.color = 'var(--danger)';
+      }
+      
+    } catch (error) {
+      console.error('Login failed:', error);
+      msgEl.textContent = 'Login failed: ' + error.message;
+      msgEl.style.color = 'var(--danger)';
+    }
   }
 
-  function logout(){
-    state.token = null;
-    enableApp(false);
-    setView('login');
+  async function logout(){
+    try {
+      // Call logout endpoint (mainly for logging purposes)
+      if (state.token) {
+        await api('/api/auth/logout', { method: 'POST' });
+      }
+    } catch (error) {
+      console.warn('Logout API call failed:', error);
+    } finally {
+      // Clear auth state regardless of API call result
+      clearAuthState();
+      enableApp(false);
+      setView('login');
+      $('#loginMsg').textContent = '';
+      console.log('User logged out');
+    }
+  }
+  
+  function updateUserDisplay() {
+    if (state.user) {
+      // Update any user-specific UI elements
+      const userDisplayElements = document.querySelectorAll('.user-display');
+      userDisplayElements.forEach(el => {
+        el.textContent = `${state.user.firstName} ${state.user.lastName} (${state.user.role})`;
+      });
+    }
   }
 
   // Users
@@ -167,7 +288,7 @@
   document.addEventListener('click', (e)=>{
     if (e.target.matches('.nav-btn')){
       const view = e.target.getAttribute('data-view');
-      if (view === 'users' && !state.token){ return; }
+      if (view === 'users' && !isAuthenticated()){ return; }
       setView(view);
     }
     if (e.target.id === 'btnLogin') doLogin();
@@ -180,8 +301,40 @@
       viewUser(id);
     }
   });
+  
+  // Handle Enter key in login form
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (e.target.id === 'login_email' || e.target.id === 'login_password') {
+        doLogin();
+      }
+    }
+  });
 
-  // Init
-  enableApp(false);
-  setView('login');
+  // Initialize app
+  async function initializeApp() {
+    // Check if user is already logged in
+    if (isAuthenticated()) {
+      try {
+        // Validate existing token
+        await api('/api/auth/validate');
+        console.log('Existing token valid, user already logged in');
+        updateUserDisplay();
+        enableApp(true);
+        setView('users');
+        await refreshUsers();
+      } catch (error) {
+        console.warn('Existing token invalid, clearing auth state');
+        clearAuthState();
+        enableApp(false);
+        setView('login');
+      }
+    } else {
+      enableApp(false);
+      setView('login');
+    }
+  }
+  
+  // Start the app
+  initializeApp();
 })(); 
