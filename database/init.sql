@@ -7,6 +7,10 @@
 -- Connect to the database
 -- \c usermgmt;
 
+-- Create enum types for user status and role
+CREATE TYPE user_status AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
+CREATE TYPE user_role AS ENUM ('USER', 'ADMIN');
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -16,8 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     phone VARCHAR(20),
-    status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED')),
-    role VARCHAR(20) DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN')),
+    status user_status DEFAULT 'ACTIVE',
+    role user_role DEFAULT 'USER',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP

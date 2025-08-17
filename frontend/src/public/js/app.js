@@ -156,6 +156,8 @@
       enableApp(false);
       setView('login');
       $('#loginMsg').textContent = '';
+      // Clear role-based styling
+      document.body.className = '';
       console.log('User logged out');
     }
   }
@@ -166,6 +168,28 @@
       const userDisplayElements = document.querySelectorAll('.user-display');
       userDisplayElements.forEach(el => {
         el.textContent = `${state.user.firstName} ${state.user.lastName} (${state.user.role})`;
+      });
+      
+      // Apply role-based styling
+      const roleClass = `user-role-${state.user.role.toLowerCase()}`;
+      document.body.className = roleClass;
+      
+      // Debug logging
+      console.log('Updated user display:', {
+        user: state.user,
+        roleClass: roleClass,
+        bodyClass: document.body.className,
+        isAdmin: state.user.role === 'ADMIN'
+      });
+      
+      // Force show/hide admin elements based on role
+      const adminElements = document.querySelectorAll('.admin-only');
+      adminElements.forEach(el => {
+        if (state.user.role === 'ADMIN') {
+          el.style.display = 'inline-block';
+        } else {
+          el.style.display = 'none';
+        }
       });
     }
   }
@@ -204,15 +228,54 @@
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No users found</td></tr>';
       } else {
         console.log(`Rendering ${list.length} users`); // Debug log
+        const isAdmin = state.user && state.user.role === 'ADMIN';
+        
+        // Update user count in title
+        const titleElement = document.querySelector('.title');
+        if (titleElement) {
+          const userInfo = titleElement.querySelector('.user-info');
+          const baseTitle = titleElement.childNodes[0].textContent.replace(/\(\d+\)/, '').trim();
+          titleElement.childNodes[0].textContent = `${baseTitle} (${list.length})`;
+        }
+        
         list.forEach(u => {
           const tr = document.createElement('tr');
+          
+          // Role badge styling
+          const roleBadge = u.role === 'ADMIN' 
+            ? '<span style="background: var(--danger); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">ADMIN</span>'
+            : '<span style="background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">USER</span>';
+          
+          // Status badge styling
+          let statusBadge = '';
+          switch(u.status) {
+            case 'ACTIVE':
+              statusBadge = '<span style="background: var(--ok); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">ACTIVE</span>';
+              break;
+            case 'INACTIVE':
+              statusBadge = '<span style="background: var(--muted); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">INACTIVE</span>';
+              break;
+            case 'SUSPENDED':
+              statusBadge = '<span style="background: var(--danger); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">SUSPENDED</span>';
+              break;
+            default:
+              statusBadge = u.status ?? '';
+          }
+          
+          // Action buttons (admin gets edit/delete, all users get view)
+          let actionButtons = `<button class="btn secondary" data-user-id="${u.id}" data-action="view">View</button>`;
+          if (isAdmin) {
+            actionButtons += ` <button class="btn" data-user-id="${u.id}" data-action="edit" style="font-size: 11px; padding: 6px 8px;">Edit</button>`;
+            actionButtons += ` <button class="btn danger" data-user-id="${u.id}" data-action="delete" style="font-size: 11px; padding: 6px 8px;">Delete</button>`;
+          }
+          
           tr.innerHTML = `
             <td>${u.id ?? ''}</td>
             <td>${u.username ?? ''}</td>
             <td>${u.email ?? ''}</td>
-            <td>${u.role ?? ''}</td>
-            <td>${u.status ?? ''}</td>
-            <td><button class="btn secondary" data-user-id="${u.id}">View</button></td>
+            <td>${roleBadge}</td>
+            <td>${statusBadge}</td>
+            <td style="white-space: nowrap;">${actionButtons}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -284,6 +347,118 @@
     }
   }
 
+  // User Creation Functions
+  function showAddUserModal() {
+    $('#view-add-user').classList.add('active');
+    // Clear form
+    ['new_username', 'new_email', 'new_firstName', 'new_lastName', 'new_phone', 'new_password'].forEach(id => {
+      $(`#${id}`).value = '';
+    });
+    $('#new_role').value = 'USER';
+    $('#createUserMsg').textContent = '';
+  }
+
+  function hideAddUserModal() {
+    $('#view-add-user').classList.remove('active');
+  }
+
+  async function createUser() {
+    const msgEl = $('#createUserMsg');
+    const createBtn = $('#btnCreateUser');
+    
+    try {
+      // Get form values
+      const userData = {
+        username: $('#new_username').value.trim(),
+        email: $('#new_email').value.trim(),
+        firstName: $('#new_firstName').value.trim(),
+        lastName: $('#new_lastName').value.trim(),
+        phone: $('#new_phone').value.trim() || null,
+        role: $('#new_role').value,
+        password: $('#new_password').value
+      };
+
+      // Basic validation
+      if (!userData.username || !userData.email || !userData.firstName || !userData.lastName || !userData.password) {
+        msgEl.textContent = 'Please fill in all required fields';
+        msgEl.style.color = 'var(--danger)';
+        return;
+      }
+
+      // Additional validation
+      if (userData.password.length < 6) {
+        msgEl.textContent = 'Password must be at least 6 characters long';
+        msgEl.style.color = 'var(--danger)';
+        return;
+      }
+
+      // Disable button and show loading
+      createBtn.disabled = true;
+      createBtn.textContent = 'Creating...';
+      msgEl.textContent = 'Creating user...';
+      msgEl.style.color = 'var(--muted)';
+
+      // Call API
+      const response = await api('/api/users', {
+        method: 'POST',
+        body: userData
+      });
+
+      if (response.success) {
+        msgEl.textContent = 'User created successfully!';
+        msgEl.style.color = 'var(--ok)';
+        
+        // Refresh user list and close modal after delay
+        setTimeout(() => {
+          hideAddUserModal();
+          refreshUsers();
+        }, 1500);
+      } else {
+        msgEl.textContent = 'Failed to create user: ' + (response.message || 'Unknown error');
+        msgEl.style.color = 'var(--danger)';
+      }
+
+    } catch (error) {
+      console.error('Create user failed:', error);
+      msgEl.textContent = 'Failed to create user: ' + error.message;
+      msgEl.style.color = 'var(--danger)';
+    } finally {
+      // Re-enable button
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create User';
+    }
+  }
+
+  // User Edit Function (placeholder for now)
+  async function editUser(id) {
+    alert(`Edit user functionality coming soon! (User ID: ${id})`);
+    // TODO: Implement edit user modal and functionality
+  }
+
+  // User Delete Function
+  async function deleteUser(id) {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await api(`/api/users/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.success) {
+        alert('User deleted successfully!');
+        await refreshUsers(); // Refresh the user list
+      } else {
+        alert('Failed to delete user: ' + (response.message || 'Unknown error'));
+      }
+
+    } catch (error) {
+      console.error('Delete user failed:', error);
+      alert('Failed to delete user: ' + error.message);
+    }
+  }
+
   // Events
   document.addEventListener('click', (e)=>{
     if (e.target.matches('.nav-btn')){
@@ -291,14 +466,34 @@
       if (view === 'users' && !isAuthenticated()){ return; }
       setView(view);
     }
+    // Close modal when clicking outside
+    if (e.target.id === 'view-add-user') {
+      hideAddUserModal();
+    }
     if (e.target.id === 'btnLogin') doLogin();
     if (e.target.id === 'btnRefresh') refreshUsers();
     if (e.target.id === 'btnLogout') logout();
     if (e.target.id === 'btnSearch') refreshUsers();
     if (e.target.id === 'btnTestAPI') testAPI();
+    if (e.target.id === 'btnAddUser') showAddUserModal();
+    if (e.target.id === 'btnCreateUser') createUser();
+    if (e.target.id === 'btnCancelCreate') hideAddUserModal();
+    if (e.target.id === 'btnCloseModal') hideAddUserModal();
     if (e.target.matches('button[data-user-id]')){
       const id = e.target.getAttribute('data-user-id');
-      viewUser(id);
+      const action = e.target.getAttribute('data-action') || 'view';
+      
+      switch(action) {
+        case 'view':
+          viewUser(id);
+          break;
+        case 'edit':
+          editUser(id);
+          break;
+        case 'delete':
+          deleteUser(id);
+          break;
+      }
     }
   });
   

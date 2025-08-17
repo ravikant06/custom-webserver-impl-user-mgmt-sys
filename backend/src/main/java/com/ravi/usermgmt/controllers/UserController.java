@@ -4,6 +4,7 @@ import com.ravi.usermgmt.db.UserRepository;
 import com.ravi.usermgmt.http.HttpRequest;
 import com.ravi.usermgmt.http.HttpResponse;
 import com.ravi.usermgmt.models.User;
+import com.ravi.usermgmt.utils.AuthUtils;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -24,11 +25,16 @@ public class UserController {
     }
 
     /**
-     * GET /api/users - Get all users with pagination
+     * GET /api/users - Get all users with pagination (Authentication required)
      */
     public CompletableFuture<HttpResponse> getAllUsers(HttpRequest request, Map<String, String> pathParams) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                // Check authentication
+                String authHeader = request.getHeader("Authorization");
+                if (AuthUtils.extractUserIdFromHeader(authHeader).isEmpty()) {
+                    return HttpResponse.unauthorized("Authentication required");
+                }
                 // Parse query parameters
                 int page = parseIntParam(request.getQueryParam("page"), 0);
                 int pageSize = parseIntParam(request.getQueryParam("pageSize"), 10);
@@ -87,11 +93,19 @@ public class UserController {
     }
 
     /**
-     * GET /api/users/{id} - Get user by ID
+     * GET /api/users/{id} - Get user by ID (Admin can view anyone, users can view themselves)
      */
     public CompletableFuture<HttpResponse> getUserById(HttpRequest request, Map<String, String> pathParams) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                // Check authentication
+                String authHeader = request.getHeader("Authorization");
+                Optional<Long> currentUserId = AuthUtils.extractUserIdFromHeader(authHeader);
+                
+                if (currentUserId.isEmpty()) {
+                    return HttpResponse.unauthorized("Authentication required");
+                }
+
                 String idStr = pathParams.get("id");
                 if (idStr == null) {
                     return HttpResponse.badRequest("User ID is required");
@@ -102,6 +116,14 @@ public class UserController {
                     id = Long.parseLong(idStr);
                 } catch (NumberFormatException e) {
                     return HttpResponse.badRequest("Invalid user ID format");
+                }
+
+                // Check permissions: Admin can view anyone, users can only view themselves
+                boolean isAdmin = AuthUtils.isAdmin(authHeader);
+                boolean isOwner = currentUserId.get().equals(id);
+                
+                if (!isAdmin && !isOwner) {
+                    return HttpResponse.forbidden("You can only view your own profile");
                 }
 
                 Optional<User> userOpt = userRepository.findById(id);
@@ -122,11 +144,17 @@ public class UserController {
     }
 
     /**
-     * POST /api/users - Create new user
+     * POST /api/users - Create new user (Admin only)
      */
     public CompletableFuture<HttpResponse> createUser(HttpRequest request, Map<String, String> pathParams) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                // Check if user is admin
+                String authHeader = request.getHeader("Authorization");
+                if (!AuthUtils.isAdmin(authHeader)) {
+                    return HttpResponse.forbidden("Only administrators can create users");
+                }
+
                 // Parse request body
                 CreateUserRequest createRequest = request.getJsonBody(CreateUserRequest.class);
                 if (createRequest == null) {
@@ -173,11 +201,18 @@ public class UserController {
     }
 
     /**
-     * PUT /api/users/{id} - Update user
+     * PUT /api/users/{id} - Update user (Admin only, or users can update themselves)
      */
     public CompletableFuture<HttpResponse> updateUser(HttpRequest request, Map<String, String> pathParams) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                String authHeader = request.getHeader("Authorization");
+                Optional<Long> currentUserId = AuthUtils.extractUserIdFromHeader(authHeader);
+                
+                if (currentUserId.isEmpty()) {
+                    return HttpResponse.unauthorized("Authentication required");
+                }
+
                 String idStr = pathParams.get("id");
                 if (idStr == null) {
                     return HttpResponse.badRequest("User ID is required");
@@ -203,6 +238,19 @@ public class UserController {
                 }
 
                 User existingUser = existingUserOpt.get();
+
+                // Check permissions: Admin can update anyone, users can only update themselves
+                boolean isAdmin = AuthUtils.isAdmin(authHeader);
+                boolean isOwner = currentUserId.get().equals(id);
+                
+                if (!isAdmin && !isOwner) {
+                    return HttpResponse.forbidden("You can only update your own profile");
+                }
+                
+                // Non-admins cannot change role or status
+                if (!isAdmin && (updateRequest.getRole() != null || updateRequest.getStatus() != null)) {
+                    return HttpResponse.forbidden("Only administrators can change user roles or status");
+                }
 
                 // Validate request
                 String validation = validateUpdateUserRequest(updateRequest);
@@ -248,11 +296,17 @@ public class UserController {
     }
 
     /**
-     * DELETE /api/users/{id} - Delete user
+     * DELETE /api/users/{id} - Delete user (Admin only)
      */
     public CompletableFuture<HttpResponse> deleteUser(HttpRequest request, Map<String, String> pathParams) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                // Check if user is admin
+                String authHeader = request.getHeader("Authorization");
+                if (!AuthUtils.isAdmin(authHeader)) {
+                    return HttpResponse.forbidden("Only administrators can delete users");
+                }
+
                 String idStr = pathParams.get("id");
                 if (idStr == null) {
                     return HttpResponse.badRequest("User ID is required");

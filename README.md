@@ -34,4 +34,5 @@ user-management-system/
 # check how can we deploy it on aws farget
 # use chatgpt5 to create a beautiful fe screens
 # role based auth
-
+# to compile: mvn clean compile
+# to run: mvn exec:java

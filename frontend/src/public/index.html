@@ -57,6 +57,7 @@
             </div>
           </div>
           <div class="actions">
+            <button id="btnAddUser" class="btn success admin-only">Add User</button>
             <button id="btnRefresh" class="btn secondary">Refresh</button>
             <button id="btnLogout" class="btn danger">Logout</button>
           </div>
@@ -92,7 +93,7 @@
                 <th>Email</th>
                 <th>Role</th>
                 <th>Status</th>
-                <th></th>
+                <th style="width: 200px;">Actions</th>
               </tr>
             </thead>
             <tbody id="users_table"></tbody>
@@ -100,6 +101,56 @@
         </div>
 
         <div id="user_details" class="card hidden"></div>
+      </section>
+
+      <!-- Add User Modal -->
+      <section id="view-add-user" class="view modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Add New User</h2>
+            <button id="btnCloseModal" class="btn-close">&times;</button>
+          </div>
+          <div class="card">
+            <div class="grid two">
+              <label>
+                <span>Username *</span>
+                <input id="new_username" type="text" placeholder="john_doe" required />
+              </label>
+              <label>
+                <span>Email *</span>
+                <input id="new_email" type="email" placeholder="john@example.com" required />
+              </label>
+              <label>
+                <span>First Name *</span>
+                <input id="new_firstName" type="text" placeholder="John" required />
+              </label>
+              <label>
+                <span>Last Name *</span>
+                <input id="new_lastName" type="text" placeholder="Doe" required />
+              </label>
+              <label>
+                <span>Phone</span>
+                <input id="new_phone" type="text" placeholder="+1-555-123-4567" />
+              </label>
+              <label>
+                <span>Role *</span>
+                <select id="new_role" required>
+                  <option value="USER">User</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </label>
+              <label style="grid-column: 1 / -1;">
+                <span>Password *</span>
+                <input id="new_password" type="password" placeholder="Enter password" required />
+              </label>
+            </div>
+            <div class="row">
+              <button id="btnCreateUser" class="btn">Create User</button>
+              <button id="btnCancelCreate" class="btn secondary">Cancel</button>
+            </div>
+            <div id="createUserMsg" class="muted"></div>
+          </div>
+        </div>
       </section>
     </main>
 

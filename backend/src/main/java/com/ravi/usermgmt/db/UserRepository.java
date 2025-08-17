@@ -28,7 +28,7 @@ public class UserRepository {
         String sql = """
             INSERT INTO users (username, email, password_hash, first_name, last_name, 
                              phone, status, role, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?::user_status, ?::user_role, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
         // Hash password before storing
@@ -153,7 +153,7 @@ public class UserRepository {
         String sql = """
             UPDATE users 
             SET username = ?, email = ?, first_name = ?, last_name = ?, 
-                phone = ?, status = ?::user_status, role = ?::user_role, updated_at = ?
+                phone = ?, status = ?, role = ?, updated_at = ?
             WHERE id = ?
             """;
 
@@ -195,7 +195,7 @@ public class UserRepository {
     }
 
     public void updateStatus(Long userId, User.UserStatus status) throws SQLException {
-        String sql = "UPDATE users SET status = ?::user_status, updated_at = ? WHERE id = ?";
+        String sql = "UPDATE users SET status = ?, updated_at = ? WHERE id = ?";
         
         LocalDateTime now = LocalDateTime.now();
         
