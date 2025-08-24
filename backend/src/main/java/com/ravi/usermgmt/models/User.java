@@ -24,6 +24,11 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;
+    
+    // Google OAuth fields
+    private String googleId;
+    private String profilePictureUrl;
+    private String oauthProvider; // 'local', 'google'
 
     // Enums for status and role
     public enum UserStatus {
@@ -40,6 +45,7 @@ public class User {
         this.role = UserRole.USER;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.oauthProvider = "local"; // Default to local authentication
     }
 
     // Constructor for creating new users
@@ -57,7 +63,8 @@ public class User {
     public User(Long id, String username, String email, String passwordHash,
                 String firstName, String lastName, String phone, 
                 UserStatus status, UserRole role, LocalDateTime createdAt,
-                LocalDateTime updatedAt, LocalDateTime lastLogin) {
+                LocalDateTime updatedAt, LocalDateTime lastLogin,
+                String googleId, String profilePictureUrl, String oauthProvider) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -70,6 +77,9 @@ public class User {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.lastLogin = lastLogin;
+        this.googleId = googleId;
+        this.profilePictureUrl = profilePictureUrl;
+        this.oauthProvider = oauthProvider != null ? oauthProvider : "local";
     }
 
     // Getters and setters
@@ -109,6 +119,16 @@ public class User {
     public LocalDateTime getLastLogin() { return lastLogin; }
     public void setLastLogin(LocalDateTime lastLogin) { this.lastLogin = lastLogin; }
 
+    // Google OAuth getters and setters
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+    public String getOauthProvider() { return oauthProvider; }
+    public void setOauthProvider(String oauthProvider) { this.oauthProvider = oauthProvider; }
+
     // Utility methods
     @JsonProperty("fullName")
     public String getFullName() {
@@ -121,6 +141,14 @@ public class User {
 
     public boolean isAdmin() {
         return role == UserRole.ADMIN;
+    }
+
+    public boolean isGoogleUser() {
+        return "google".equals(oauthProvider);
+    }
+
+    public boolean isLocalUser() {
+        return "local".equals(oauthProvider);
     }
 
     // Update the updated_at timestamp
@@ -204,6 +232,21 @@ public class User {
 
         public Builder status(UserStatus status) {
             user.setStatus(status);
+            return this;
+        }
+
+        public Builder googleId(String googleId) {
+            user.setGoogleId(googleId);
+            return this;
+        }
+
+        public Builder profilePictureUrl(String profilePictureUrl) {
+            user.setProfilePictureUrl(profilePictureUrl);
+            return this;
+        }
+
+        public Builder oauthProvider(String oauthProvider) {
+            user.setOauthProvider(oauthProvider);
             return this;
         }
 

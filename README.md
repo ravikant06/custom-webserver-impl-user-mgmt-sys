@@ -36,3 +36,6 @@ user-management-system/
 # role based auth
 # to compile: mvn clean compile
 # to run: mvn exec:java
+# start fe server: python3 -m http.server 3000
+# google auth client id 10217611478-r6n5miarsidp97u82kt9fcqcle9ftcb3.apps.googleusercontent.com
+# google cleint secret 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

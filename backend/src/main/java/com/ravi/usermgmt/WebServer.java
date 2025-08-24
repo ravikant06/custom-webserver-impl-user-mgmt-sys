@@ -132,6 +132,9 @@ public class WebServer {
         router.post("/api/auth/refresh", HttpRouter.withMiddleware(corsMiddleware,
             HttpRouter.withMiddleware(loggingMiddleware, authController::refreshToken)));
         
+        router.post("/api/auth/google", HttpRouter.withMiddleware(corsMiddleware,
+            HttpRouter.withMiddleware(loggingMiddleware, authController::googleLogin)));
+        
         // User management endpoints
         router.get("/api/users", HttpRouter.withMiddleware(corsMiddleware,
             HttpRouter.withMiddleware(loggingMiddleware, userController::getAllUsers)));

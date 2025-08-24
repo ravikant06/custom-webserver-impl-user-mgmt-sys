@@ -2,6 +2,9 @@
   // Backend API base URL - this is where your Java server is running
   const API_BASE = 'http://localhost:8080';
   
+  // Google OAuth configuration
+  const GOOGLE_CLIENT_ID = '10217611478-r6n5miarsidp97u82kt9fcqcle9ftcb3.apps.googleusercontent.com'; // Replace with your actual client ID
+  
   const state = { 
     token: localStorage.getItem('auth_token'), 
     user: JSON.parse(localStorage.getItem('user_info') || 'null'),
@@ -191,6 +194,146 @@
           el.style.display = 'none';
         }
       });
+    }
+  }
+
+  // Google OAuth Functions
+  function initGoogleOAuth() {
+    // Check if Google SDK is loaded
+    if (typeof google === 'undefined') {
+      console.warn('Google SDK not loaded yet, retrying...');
+      setTimeout(initGoogleOAuth, 500);
+      return;
+    }
+
+    try {
+      console.log('Initializing Google OAuth...');
+      
+      // Initialize Google OAuth
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        ux_mode: 'popup',
+        use_fedcm_for_prompt: false
+      });
+
+      // Render the actual Google Sign-In button instead of custom button
+      const googleButtonContainer = document.getElementById('btnGoogleLogin');
+      if (googleButtonContainer) {
+        // Hide the custom button and replace with Google's button
+        googleButtonContainer.style.display = 'none';
+        
+        // Create container for Google's button
+        const googleButtonDiv = document.createElement('div');
+        googleButtonDiv.id = 'google-signin-button';
+        googleButtonContainer.parentNode.insertBefore(googleButtonDiv, googleButtonContainer);
+        
+        // Render Google's official button
+        google.accounts.id.renderButton(
+          googleButtonDiv,
+          {
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+            width: googleButtonContainer.offsetWidth || 300
+          }
+        );
+        
+        console.log('Google Sign-In button rendered successfully');
+      } else {
+        console.error('Google login button container not found!');
+      }
+
+      console.log('Google OAuth initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize Google OAuth:', error);
+    }
+  }
+
+  // Handle Google OAuth Response
+  async function handleGoogleResponse(response) {
+    const msgEl = $('#googleLoginMsg');
+    
+    try {
+      console.log('Google OAuth response received');
+      
+      msgEl.textContent = 'Signing in with Google...';
+      msgEl.style.color = 'var(--muted)';
+
+      // Send Google token to backend
+      const result = await api('/api/auth/google', {
+        method: 'POST',
+        body: { 
+          token: response.credential 
+        },
+        skipAuth: true
+      });
+
+      if (result.success && result.data) {
+        const loginData = result.data;
+        
+        // Save authentication state (same as regular login)
+        saveAuthState(loginData.token, {
+          userId: loginData.userId,
+          username: loginData.username,
+          email: loginData.email,
+          firstName: loginData.firstName,
+          lastName: loginData.lastName,
+          role: loginData.role,
+          status: loginData.status
+        });
+        
+        msgEl.textContent = 'Google login successful!';
+        msgEl.style.color = 'var(--ok)';
+        
+        // Update UI (same as regular login)
+        updateUserDisplay();
+        enableApp(true);
+        setView('users');
+        
+        // Load users
+        await refreshUsers();
+        
+        console.log('Google login successful for user:', loginData.email);
+      } else {
+        msgEl.textContent = 'Google login failed: Invalid response';
+        msgEl.style.color = 'var(--danger)';
+      }
+
+    } catch (error) {
+      console.error('Google login failed:', error);
+      msgEl.textContent = 'Google login failed: ' + error.message;
+      msgEl.style.color = 'var(--danger)';
+    }
+  }
+
+  // Manual Google Login (for button click)
+  async function doGoogleLogin() {
+    try {
+      if (typeof google === 'undefined') {
+        alert('Google SDK not loaded. Please refresh the page and try again.');
+        return;
+      }
+
+      // Trigger Google sign-in prompt
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          console.log('Google sign-in prompt not displayed');
+          // Fallback: show a message
+          const msgEl = $('#googleLoginMsg');
+          msgEl.textContent = 'Please allow popups and try again';
+          msgEl.style.color = 'var(--danger)';
+        }
+      });
+    } catch (error) {
+      console.error('Error initiating Google login:', error);
+      const msgEl = $('#googleLoginMsg');
+      msgEl.textContent = 'Failed to start Google login';
+      msgEl.style.color = 'var(--danger)';
     }
   }
 
@@ -471,6 +614,7 @@
       hideAddUserModal();
     }
     if (e.target.id === 'btnLogin') doLogin();
+    if (e.target.id === 'btnGoogleLogin') doGoogleLogin();
     if (e.target.id === 'btnRefresh') refreshUsers();
     if (e.target.id === 'btnLogout') logout();
     if (e.target.id === 'btnSearch') refreshUsers();
@@ -508,6 +652,9 @@
 
   // Initialize app
   async function initializeApp() {
+    // Initialize Google OAuth
+    initGoogleOAuth();
+    
     // Check if user is already logged in
     if (isAuthenticated()) {
       try {
