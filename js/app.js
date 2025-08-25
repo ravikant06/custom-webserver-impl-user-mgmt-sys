@@ -629,7 +629,7 @@
       
       switch(action) {
         case 'view':
-          viewUser(id);
+      viewUser(id);
           break;
         case 'edit':
           editUser(id);

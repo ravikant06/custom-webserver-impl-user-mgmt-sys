@@ -9,7 +9,7 @@ const CONFIG = {
   
   // Production environment (GitHub Pages)
   production: {
-    API_BASE: 'https://your-backend-domain.com', // You'll need to update this
+    API_BASE: 'http://localhost:8080', // Temporary: Update this when you deploy backend
     GOOGLE_CLIENT_ID: '10217611478-r6n5miarsidp97u82kt9fcqcle9ftcb3.apps.googleusercontent.com',
     FACEBOOK_APP_ID: 'YOUR_FACEBOOK_APP_ID'
   }
