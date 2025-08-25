@@ -1,9 +1,9 @@
 (function(){
   // Backend API base URL - this is where your Java server is running
-  const API_BASE = 'http://localhost:8080';
+  const API_BASE = window.APP_CONFIG.API_BASE;
   
   // Google OAuth configuration
-  const GOOGLE_CLIENT_ID = '10217611478-r6n5miarsidp97u82kt9fcqcle9ftcb3.apps.googleusercontent.com'; // Replace with your actual client ID
+  const GOOGLE_CLIENT_ID = window.APP_CONFIG.GOOGLE_CLIENT_ID; // Replace with your actual client ID
   
   const state = { 
     token: localStorage.getItem('auth_token'), 
