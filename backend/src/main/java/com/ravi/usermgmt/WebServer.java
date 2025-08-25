@@ -100,7 +100,7 @@ public class WebServer {
         this.router = new HttpRouter();
         
         // Add middleware
-        HttpRouter.Middleware corsMiddleware = HttpRouter.corsMiddleware();
+        HttpRouter.Middleware corsMiddleware = HttpRouter.corsMiddleware("https://ravikant06.github.io");
         HttpRouter.Middleware loggingMiddleware = HttpRouter.loggingMiddleware();
         
         // Health check endpoint
@@ -160,6 +160,9 @@ public class WebServer {
         // Static file serving (simple implementation)
         router.get("/", HttpRouter.withMiddleware(corsMiddleware, this::serveIndex));
         router.get("/favicon.ico", HttpRouter.withMiddleware(corsMiddleware, this::serveFavicon));
+        
+        // Handle OPTIONS requests for CORS preflight
+        router.options(".*", HttpRouter.withMiddleware(corsMiddleware, this::handleOptions));
         
         // Custom error handlers
         router.notFound((request, pathParams) -> 
@@ -231,6 +234,9 @@ public class WebServer {
             responseFuture
                 .thenAcceptAsync(response -> {
                     try {
+                        // Add CORS headers for cross-origin requests
+                        response.cors("https://ravikant06.github.io");
+                        
                         // Send response
                         response.send(clientSocket.getOutputStream());
                         logger.debug("Sent response for request #" + requestId + ": " + response.getStatusCode());
@@ -258,6 +264,7 @@ public class WebServer {
             try {
                 // Send error response
                 HttpResponse errorResponse = HttpResponse.internalServerError("Internal server error");
+                errorResponse.cors("https://ravikant06.github.io");
                 errorResponse.send(clientSocket.getOutputStream());
             } catch (IOException ioException) {
                 logger.debug("Could not send error response: " + ioException.getMessage());
@@ -414,6 +421,10 @@ public class WebServer {
 
     private CompletableFuture<HttpResponse> serveFavicon(HttpRequest request, java.util.Map<String, String> pathParams) {
         return CompletableFuture.completedFuture(HttpResponse.notFound("Favicon not found"));
+    }
+    
+    private CompletableFuture<HttpResponse> handleOptions(HttpRequest request, java.util.Map<String, String> pathParams) {
+        return CompletableFuture.completedFuture(HttpResponse.ok().cors("https://ravikant06.github.io"));
     }
 
     // Main method
