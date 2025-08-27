@@ -100,7 +100,7 @@ public class WebServer {
         this.router = new HttpRouter();
         
         // Add middleware
-        HttpRouter.Middleware corsMiddleware = HttpRouter.corsMiddleware("https://ravikant06.github.io");
+        HttpRouter.Middleware corsMiddleware = HttpRouter.corsMiddleware("*");
         HttpRouter.Middleware loggingMiddleware = HttpRouter.loggingMiddleware();
         
         // Health check endpoint
@@ -225,6 +225,8 @@ public class WebServer {
             
             // Parse HTTP request
             HttpRequest request = HttpRequest.parse(clientSocket.getInputStream());
+            logger.info("🌐 BACKEND RECEIVED REQUEST #{}: {} {} from {}", 
+                requestId, request.getMethod(), request.getPath(), request.getHeader("Origin"));
             logger.debug("Parsed request: " + request);
             
             // Route request and get response
@@ -235,10 +237,12 @@ public class WebServer {
                 .thenAcceptAsync(response -> {
                     try {
                         // Add CORS headers for cross-origin requests
-                        response.cors("https://ravikant06.github.io");
+                        response.cors("*");
                         
                         // Send response
                         response.send(clientSocket.getOutputStream());
+                        logger.info("📤 BACKEND SENT RESPONSE #{}: {} with CORS headers", 
+                            requestId, response.getStatusCode());
                         logger.debug("Sent response for request #" + requestId + ": " + response.getStatusCode());
                     } catch (IOException e) {
                         logger.warn("Error sending response for request #" + requestId + ": " + e.getMessage());
@@ -264,7 +268,7 @@ public class WebServer {
             try {
                 // Send error response
                 HttpResponse errorResponse = HttpResponse.internalServerError("Internal server error");
-                errorResponse.cors("https://ravikant06.github.io");
+                errorResponse.cors("*");
                 errorResponse.send(clientSocket.getOutputStream());
             } catch (IOException ioException) {
                 logger.debug("Could not send error response: " + ioException.getMessage());
@@ -424,7 +428,7 @@ public class WebServer {
     }
     
     private CompletableFuture<HttpResponse> handleOptions(HttpRequest request, java.util.Map<String, String> pathParams) {
-        return CompletableFuture.completedFuture(HttpResponse.ok().cors("https://ravikant06.github.io"));
+        return CompletableFuture.completedFuture(HttpResponse.ok().cors("*"));
     }
 
     // Main method
@@ -482,4 +486,6 @@ public class WebServer {
         public long memoryTotal;
         public long memoryMax;
     }
+
+
 }
