@@ -2,13 +2,13 @@
 const CONFIG = {
   // Development environment (localhost)
   development: {
-    API_BASE: 'https://27e9c817fd1cfac449afcddb3327341a.serveo.net',
+    API_BASE: 'http://localhost:8080',
     GOOGLE_CLIENT_ID: '10217611478-r6n5miarsidp97u82kt9fcqcle9ftcb3.apps.googleusercontent.com'
   },
   
   // Production environment (GitHub Pages)
   production: {
-    API_BASE: 'https://27e9c817fd1cfac449afcddb3327341a.serveo.net', // Temporary: Update this when you deploy backend
+    API_BASE: 'https://c788706adc4281a626a4cfaaad26f12d.serveo.net', // Temporary: Update this when you deploy backend
     GOOGLE_CLIENT_ID: '10217611478-r6n5miarsidp97u82kt9fcqcle9ftcb3.apps.googleusercontent.com'
   }
 };
